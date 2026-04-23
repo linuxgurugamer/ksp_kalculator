@@ -113,7 +113,7 @@ namespace kalculator
         private string _version;
         private string _versionlastrun;
         //private IButton _button;
-        ToolbarControl toolbarControl;
+        static ToolbarControl toolbarControl = null;
         private bool _useKspSkin;
         private const string _tooltipOn = "Hide Kalculator";
         private const string _tooltipOff = "Show Kalculator";
@@ -139,15 +139,18 @@ namespace kalculator
 
         private void CreateButtonIcon()
         {
-            toolbarControl = gameObject.AddComponent<ToolbarControl>();
-            toolbarControl.AddToAllToolbars(Toggle, Toggle,
-                ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.TRACKSTATION | ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH | ApplicationLauncher.AppScenes.TRACKSTATION,
-                MODID,
-                "kalculatorButton",
-                _btextureOn + "-38", _btextureOn + "-24",
-                _btextureOff + "-38", _btextureOff + "-24",
-                MODNAME
-            );
+            if (toolbarControl == null)
+            {
+                toolbarControl = gameObject.AddComponent<ToolbarControl>();
+                toolbarControl.AddToAllToolbars(Toggle, Toggle,
+                    ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.TRACKSTATION | ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH | ApplicationLauncher.AppScenes.TRACKSTATION,
+                    MODID,
+                    "kalculatorButton",
+                    _btextureOn + "-38", _btextureOn + "-24",
+                    _btextureOff + "-38", _btextureOff + "-24",
+                    MODNAME
+                );
+            }
         }
 
         void Update()
@@ -175,8 +178,6 @@ namespace kalculator
         void OnDestroy()
         {
             SaveSettings();
-            toolbarControl.OnDestroy();
-            Destroy(toolbarControl);
         }
 
 
