@@ -1,0 +1,167 @@
+<div class="wikidoc"><h1>Custom data sources</h1>
+<ul><li><a href="#MPDataSource">MPDataSource</a></li>
+<li><a href="#MPDataGenerator">MPDataGenerator</a></li>
+<li><a href="#Example">Example</a></li></ul>
+<a name="MPDataSource"></a>
+<h2>MPDataSource</h2>
+Data sources consist of two classes. The first one is a data source. This class should be derived from <i>MPDataSource</i> and should override the method:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Returns -1 if the operator doesn&#39;t match. Else it returns the length of the matched string.</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Green;">The expression&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Green;">The previous expression&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">int</span> Match(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken, <span style="color:Blue;">out</span> MPDataGenerator data);
+</pre></div><br />The data source is only necessary while compiling. If a match is found at the start of <i>expression</i>, then length of the match is returned, and <i>data</i> contains an <i>MPDataGenerator</i> object that will be invoked at each evaluation.<br />The argument <i>previousToken</i> can be used to find out if a unary operator is expected or not.<br /><br />The second part of a data source is the data generator.<br /><br /><a name="MPDataGenerator"></a>
+<h2>MPDataGenerator</h2>
+This class will run every time the evaluation of an expression is performed. A data generator is derived from the abstract class <i>MPDataGenerator</i> and should override the method:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Generates an object at evaluation time</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">object</span> Generate();
+</pre></div><br />The method <i>Generate()</i> is invoked to request an object that should be pushed on the output stack.<br /><br />For example, the generic data source for variables is defined as follows:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> An event handler that is processed when a variable is requested by its name</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;sender&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;data&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">delegate</span> <span style="color:Blue;">void</span> RequestVariableValueEventHandler(<span style="color:Blue;">object</span> sender, VariableValueRequestData data);
+
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> A class containing data</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">class</span> VariableValueRequestData
+{
+    <span style="color:Blue;">private</span> <span style="color:Blue;">string</span> name;
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Gets the name of the variable of which the value is requested</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">string</span> Name { <span style="color:Blue;">get</span> { <span style="color:Blue;">return</span> name; } }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Gets or sets the value of the variable</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">object</span> Value { <span style="color:Blue;">get</span>; <span style="color:Blue;">set</span>; }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Constructor</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;name&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> VariableValueRequestData(<span style="color:Blue;">string</span> name)
+    {
+        <span style="color:Blue;">this</span>.name = name;
+        Value = <span style="color:Blue;">null</span>;
+    }
+}
+
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Can generate variables</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">class</span> MPVariable : MPDataSource
+{
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> An event that is called when a variable requests its value</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">event</span> RequestVariableValueEventHandler ValueRequested;
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Will request data at evaluation time</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">class</span> MPVariableValue : MPDataGenerator
+    {
+        <span style="color:Blue;">private</span> <span style="color:Blue;">string</span> name;
+        <span style="color:Blue;">private</span> MPVariable parent;
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Constructor</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Blue;">public</span> MPVariableValue(<span style="color:Blue;">string</span> name, MPVariable parent)
+            : <span style="color:Blue;">base</span>()
+        {
+            <span style="color:Blue;">this</span>.parent = parent;
+            <span style="color:Blue;">this</span>.name = name;
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Calls the event to request a value</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">object</span> Generate()
+        {
+            VariableValueRequestData data = <span style="color:Blue;">new</span> VariableValueRequestData(name);
+            <span style="color:Blue;">if</span> (parent.ValueRequested != <span style="color:Blue;">null</span>)
+                parent.ValueRequested(<span style="color:Blue;">this</span>, data);
+
+            <span style="color:Green;">// Extract the result</span>
+            <span style="color:Blue;">return</span> data.Value;
+        }
+    }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Find a variable</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;generator&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">int</span> Match(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken, <span style="color:Blue;">out</span> MPDataGenerator data)
+    {
+        <span style="color:Green;">// Check for a variable</span>
+        Match m = Regex.Match(expression, <span style="color:#A31515;">@&quot;^[a-zA-Z_]\w*&quot;</span>);
+        <span style="color:Blue;">if</span> (m.Success)
+        {
+            data = <span style="color:Blue;">new</span> MPVariableValue(m.Value, <span style="color:Blue;">this</span>);
+            <span style="color:Blue;">return</span> m.Length;
+        }
+
+        <span style="color:Green;">// Not found</span>
+        data = <span style="color:Blue;">null</span>;
+        <span style="color:Blue;">return</span> -1;
+    }
+}
+</pre></div><br />When a variable is matched (a series of characters starting with a letter or an underscore) then a new data generator is created with that identifier. This data generator is returned and stored by the parser.<br />When the expression is evaluated, the data generator will invoke the event <i>ValueRequested</i> of its parent object using its own identifier.<br /><br /><a name="Example"></a>
+<h2>Example</h2>
+A typical application using the provided class <i>MPVariable</i> looks like this:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> MultiParse;
+<span style="color:Blue;">using</span> MultiParse.Default;
+
+<span style="color:Blue;">namespace</span> Tutorials
+{
+    <span style="color:Blue;">class</span> Program
+    {
+        <span style="color:Blue;">static</span> <span style="color:Blue;">void</span> Main(<span style="color:Blue;">string</span>[] args)
+        {
+            Expression e = <span style="color:Blue;">new</span> Expression();
+
+            <span style="color:Green;">// Add a data source for variables</span>
+            MPVariable varSource = <span style="color:Blue;">new</span> MPVariable();
+            varSource.ValueRequested += <span style="color:Blue;">new</span> RequestVariableValueEventHandler(varSource_ValueRequested);
+            e.DataSources.Add(varSource);
+
+            <span style="color:Green;">// Evaluate the expression</span>
+            <span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;b==(int)floor(_varA)&quot;</span>); <span style="color:Green;">// Returns True System.Boolean</span>
+            Console.WriteLine(result + <span style="color:#A31515;">&quot; &quot;</span> + result.GetType().ToString());
+            Console.ReadKey();
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Called when a variable needs its value</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;sender&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;data&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Blue;">static</span> <span style="color:Blue;">void</span> varSource_ValueRequested(<span style="color:Blue;">object</span> sender, VariableValueRequestData data)
+        {
+            <span style="color:Blue;">if</span> (data.Name == <span style="color:#A31515;">&quot;_varA&quot;</span>)
+                data.Value = 3.6;
+            <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (data.Name == <span style="color:#A31515;">&quot;b&quot;</span>)
+                data.Value = 3;
+            <span style="color:Blue;">else</span>
+                <span style="color:Blue;">throw</span> <span style="color:Blue;">new</span> ParseException(<span style="color:#A31515;">&quot;Invalid variable &quot;</span> + data.Name);
+        }
+    }
+}
+</pre></div><br />The event throws an exception if the variable is neither &quot;_varA&quot; or &quot;b&quot;, else it returns a double or int respectively. The expression parser therefore evaluates &quot;3==(int)floor(3.6)&quot; which is true.<br /><br />That&#39;s all there is to know about MultiParse. Have fun!</div><div class="ClearBoth"></div>

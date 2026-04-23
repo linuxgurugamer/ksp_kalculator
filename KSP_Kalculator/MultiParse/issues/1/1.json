@@ -1,0 +1,65 @@
+{
+  "WorkItem": {
+    "AffectedComponent": {
+      "Name": "",
+      "DisplayName": ""
+    },
+    "ClosedComment": "",
+    "ClosedDate": null,
+    "CommentCount": 5,
+    "Custom": null,
+    "Description": "Thanks for the great work. \r\n\r\nPlease create a nuget package, so we can utilize this plugin in our automated build system.\r\n\r\nThanks.",
+    "LastUpdatedDate": "2014-04-11T08:19:29.797-07:00",
+    "PlannedForRelease": "",
+    "ReleaseVisibleToPublic": false,
+    "Priority": {
+      "Name": "Unassigned",
+      "Severity": 0,
+      "Id": 0
+    },
+    "ProjectName": "multiparse",
+    "ReportedDate": "2014-03-04T09:22:53.753-08:00",
+    "Status": {
+      "Name": "Proposed",
+      "Id": 1
+    },
+    "ReasonClosed": {
+      "Name": "Unassigned"
+    },
+    "Summary": "Nuget Package?",
+    "Type": {
+      "Name": "Unassigned",
+      "Id": 5
+    },
+    "VoteCount": 5,
+    "Id": 1
+  },
+  "FileAttachments": [],
+  "Comments": [
+    {
+      "Message": "I tried creating one, but since I have zero experience with NuGet whatsoever, I cannot be certain that it works.\n\nSven",
+      "PostedDate": "2014-04-07T01:25:17.647-07:00",
+      "Id": 140778
+    },
+    {
+      "Message": "Publishing a NuGet package is not hard; see http://docs.nuget.org/docs/creating-packages/creating-and-publishing-a-package\n\nBasically, run  nuget spec  in the csproj directory, edit the generated file, build your project in Release mode, and run  nuget pack -Prop Configuration=Release .\n\nSee also http://www.hanselman.com/blog/UpdatingAndPublishingANuGetPackagePlusMakingNuGetPackagesSmarterAndAvoidingSourceEditsWithWebActivator.aspx\n\nThanks!",
+      "PostedDate": "2014-04-07T02:11:22.487-07:00",
+      "Id": 140787
+    },
+    {
+      "Message": "I have done as you said. Could you confirm?\n\nSven",
+      "PostedDate": "2014-04-11T05:58:47.807-07:00",
+      "Id": 141488
+    },
+    {
+      "Message": "Great! Can you please post a link somewhere on [homepage](https://multiparse.codeplex.com/) or [wiki/documentation](https://multiparse.codeplex.com/documentation). 8-)",
+      "PostedDate": "2014-04-11T06:21:24.88-07:00",
+      "Id": 141490
+    },
+    {
+      "Message": "I have put a link up on the homepage, as you requested.\n\nThank you for your input,\nSven",
+      "PostedDate": "2014-04-11T08:19:29.797-07:00",
+      "Id": 141506
+    }
+  ]
+}

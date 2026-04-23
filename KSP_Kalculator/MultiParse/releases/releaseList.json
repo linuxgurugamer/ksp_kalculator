@@ -1,0 +1,88 @@
+[
+  {
+    "Id": "0",
+    "Name": "MultiParse V1.1",
+    "DevelopmentStatus": "Beta",
+    "Description": "* Differences:\n** Removed Data Sources\n** Added the interfaces IMPGettable, IMPAssignable to accomodate variable assignment\n** Default operators behave slightly different\n** Fixed bug in explicit typecasts\n* Added features:\n** Default operator MPAssignment added\n** Example library for complex numbers\n*** Custom data types: Complex\n*** Custom operators: + (unary and binary), - (unary and binary), *, /, ^ (exponentiation), ==, !=\n*** Custom functions: Abs() (absolute value), Arg() (argument)\n** Example library for arbitrary matrices\n*** Custom data types: Matrix, MatrixVariable (matrix variables should start with a capital letter) that allows indexed access, e.g. {\"A[1,2]\"} sets or gets element at row 2 and columns 3 of matrix A.\n*** Custom operators: + (unary and binary), - (unary and binary), *, /, ^ (exponentiation including inverse), ==, !=, (Complex) (explicit type cast)\n*** Custom functions: LUD() (lu decomposition), LUSolve() (solve X in A*X=B), Det() (determinant)",
+    "ReleasedDatge": "0001-01-01T00:00:00",
+    "ModifiedDate": "2014-01-10T07:20:17.77-08:00",
+    "Files": [
+      {
+        "Id": "bf139396-0809-4dd6-98fb-985e226e5cd0",
+        "FileName": "MultiParse - Binaries.zip",
+        "Url": "./0/bf139396-0809-4dd6-98fb-985e226e5cd0",
+        "Type": "Application",
+        "UploadDate": "2014-01-05T05:22:33.197-08:00"
+      },
+      {
+        "Id": "cd08e3ee-b757-4361-85de-02b6d023d260",
+        "FileName": "MultiParse - Source Code.zip",
+        "Url": "./0/cd08e3ee-b757-4361-85de-02b6d023d260",
+        "Type": "Source Code",
+        "UploadDate": "2014-01-05T05:22:33.243-08:00"
+      },
+      {
+        "Id": "11dd02c1-c194-42d2-a7da-9db1e3425ba5",
+        "FileName": "MultiParseComplex.zip",
+        "Url": "./0/11dd02c1-c194-42d2-a7da-9db1e3425ba5",
+        "Type": "Example",
+        "UploadDate": "2014-01-05T05:22:33.307-08:00"
+      },
+      {
+        "Id": "1428ec61-96e9-4269-99ce-1c2e5f3cbe09",
+        "FileName": "MultiParseMatrix.zip",
+        "Url": "./0/1428ec61-96e9-4269-99ce-1c2e5f3cbe09",
+        "Type": "Example",
+        "UploadDate": "2014-01-05T05:22:33.337-08:00"
+      }
+    ]
+  },
+  {
+    "Id": "1",
+    "Name": "MultiParse - 1.0",
+    "DevelopmentStatus": "Beta",
+    "Description": "Initial release of MultiParse.",
+    "ReleasedDatge": "0001-01-01T00:00:00",
+    "ModifiedDate": "2013-12-29T09:30:41.46-08:00",
+    "Files": [
+      {
+        "Id": "c5342197-c797-4da3-b6f3-fa71ebd84ec0",
+        "FileName": "MultiParse - Binaries.zip",
+        "Url": "./1/c5342197-c797-4da3-b6f3-fa71ebd84ec0",
+        "Type": "Application",
+        "UploadDate": "2013-12-29T09:30:41.367-08:00"
+      },
+      {
+        "Id": "b0fe6df6-c728-4c33-a0ed-54bd153ee235",
+        "FileName": "MultiParse - Source.zip",
+        "Url": "./1/b0fe6df6-c728-4c33-a0ed-54bd153ee235",
+        "Type": "Source Code",
+        "UploadDate": "2013-12-29T09:30:41.367-08:00"
+      }
+    ]
+  },
+  {
+    "Id": "2",
+    "Name": "MultiParse V1.2",
+    "DevelopmentStatus": "Beta",
+    "Description": "New updates:\n* Added a new structure called CompiledExpression\n** Holds all data for evaluation\n** Is not dependent on any expression\n** Can be used outside of the expression and can be evaluated independently\n* Will update documentation",
+    "ReleasedDatge": "0001-01-01T00:00:00",
+    "ModifiedDate": "2014-12-04T02:20:13.753-08:00",
+    "Files": [
+      {
+        "Id": "c1e65c7e-5f00-4a80-99d1-437894ada633",
+        "FileName": "MultiParse - Binaries.zip",
+        "Url": "./2/c1e65c7e-5f00-4a80-99d1-437894ada633",
+        "Type": "Application",
+        "UploadDate": "2014-12-04T02:20:13.457-08:00"
+      },
+      {
+        "Id": "9c8b54a9-0712-4d9f-8bbc-9195ae7c4484",
+        "FileName": "MultiParse - Source Code.zip",
+        "Url": "./2/9c8b54a9-0712-4d9f-8bbc-9195ae7c4484",
+        "Type": "Source Code",
+        "UploadDate": "2014-12-04T02:20:13.503-08:00"
+      }
+    ]
+  }
+]

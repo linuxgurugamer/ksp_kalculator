@@ -28,19 +28,80 @@
 // -------------------------------------------------------------------------------------------------
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using UnityEngine;
+using ClickThroughFix;
+using ToolbarControl_NS;
+using KSP.UI.Screens;
+using KSP.UI.Screens.Settings.Controls.Values;
 
 namespace kalculator
 {
+    // Operator precedence, lowest to highest
+    // +   -
+    // *   /
+    // ^   - (unary minus)
+
+    internal class StackItem
+    {
+        static internal int openParens = 0;
+
+        internal enum ItemType { number, op, leftParan, rightParan };
+
+        internal ItemType itemType;
+        internal string opToPerform;
+        internal double value;
+
+        internal StackItem(string op)
+        {
+            itemType = ItemType.op;
+            opToPerform = op;
+        }
+        internal StackItem(double n)
+        {
+            itemType = ItemType.number;
+            value = n;
+        }
+        internal StackItem(ItemType i)
+        {
+            itemType = i;
+            if (itemType == ItemType.leftParan) openParens++;
+            if (itemType == ItemType.rightParan) openParens--;
+            if (openParens < 0)
+                Debug.Log("Too many closing parens");
+        }
+
+        internal new string ToString()
+        {
+            switch (itemType)
+            {
+                case ItemType.number:
+                    return value.ToString();
+                case ItemType.op:
+                    return opToPerform;
+                case ItemType.leftParan:
+                    return "(";
+                case ItemType.rightParan:
+                    return ")";
+            }
+            return "";
+        }
+    }
+
+
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
     public class Kalculator : MonoBehaviour
     {
         private Rect _calcsize;
         private string _keybind;
-        private readonly float[] _registers = new float[2];
-        private string _currentnumber = "0";
+        //private readonly float[] _registers = new float[2];
+        //List<double> registers = new List<double>();
+        Stack<double> registerStack = new Stack<double>();
+        List<StackItem> itemList = new List<StackItem>();
+        private string _currentnumber = "";
         private string _mem = "0";
         private const int _displayfontsize = 24;
         private const int _opfontsize = 15;
@@ -51,7 +112,8 @@ namespace kalculator
         private bool _visible;
         private string _version;
         private string _versionlastrun;
-        private IButton _button;
+        //private IButton _button;
+        ToolbarControl toolbarControl;
         private bool _useKspSkin;
         private const string _tooltipOn = "Hide Kalculator";
         private const string _tooltipOff = "Show Kalculator";
@@ -59,23 +121,7 @@ namespace kalculator
         private const string _btextureOff = "Kalculator/Textures/icon_off";
         private const ControlTypes BLOCK_ALL_CONTROLS = ControlTypes.ALL_SHIP_CONTROLS | ControlTypes.ACTIONS_ALL | ControlTypes.EVA_INPUT | ControlTypes.TIMEWARP | ControlTypes.MISC | ControlTypes.GROUPS_ALL | ControlTypes.CUSTOM_ACTION_GROUPS;
 
-#if DEBUG
-        private string GetCalcInternalsInfo()
-        {
-            string info = "";
-            info += "Screen: " + _currentnumber + "\n";
-            info += "Clear Screen?: " + _clearscreen + "\n";
-            for (int i = 0; i < _registers.Length; i++)
-            {
-                info += "Reg[" + i + "] <= " + _registers[i] + "\n";
-            }
-            info += "Current op: " + _optoperform + "\n";
-            info += "Register to use: " + (_isfirst ? "0" : "1") + "\n";
-            info += "MR: " + _mem;
 
-            return info;
-        }
-#endif
         void Awake()
         {
             LoadVersion();
@@ -85,12 +131,23 @@ namespace kalculator
 
         void Start()
         {
-            if (!ToolbarManager.ToolbarAvailable) return;
-            _button = ToolbarManager.Instance.add("kalculator", "toggle");
-            _button.TexturePath = _btextureOff;
-            _button.ToolTip = _tooltipOff;
-            _button.OnClick += e => Toggle();
+            CreateButtonIcon();
+        }
 
+        internal const string MODID = "kalculator_NS";
+        internal const string MODNAME = "Kalculator";
+
+        private void CreateButtonIcon()
+        {
+            toolbarControl = gameObject.AddComponent<ToolbarControl>();
+            toolbarControl.AddToAllToolbars(Toggle, Toggle,
+                ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.TRACKSTATION | ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH | ApplicationLauncher.AppScenes.TRACKSTATION,
+                MODID,
+                "kalculatorButton",
+                _btextureOn + "-38", _btextureOn + "-24",
+                _btextureOff + "-38", _btextureOff + "-24",
+                MODNAME
+            );
         }
 
         void Update()
@@ -118,38 +175,39 @@ namespace kalculator
         void OnDestroy()
         {
             SaveSettings();
-            if (_button != null)
-            {
-                _button.Destroy();
-            }
+            toolbarControl.OnDestroy();
+            Destroy(toolbarControl);
         }
 
 
         void OnGUI()
         {
-#if DEBUG
-            GUILayout.Label(GetCalcInternalsInfo());//DEBUG.
-#endif
             GUISkin _defGuiSkin = GUI.skin;
             if (_visible)
             {
                 GUI.skin = _useKspSkin ? HighLogic.Skin : _defGuiSkin;
-                _calcsize = GUI.Window(GUIUtility.GetControlID(0, FocusType.Passive), _calcsize, CalcWindow, "Kalculator");
+                _calcsize = ClickThruBlocker.GUIWindow(GUIUtility.GetControlID(0, FocusType.Passive), _calcsize, CalcWindow, "Kalculator");
             }
             GUI.skin = _defGuiSkin;
         }
 
+        GUIStyle textFieldStyle = null;
+        GUIStyle labelStyle;
         void CalcWindow(int windowID)
         {
+            if (textFieldStyle == null)
+            {
+                textFieldStyle = new GUIStyle(GUI.skin.textField);
+                textFieldStyle.fontSize = _displayfontsize;
+
+                labelStyle = new GUIStyle(GUI.skin.label);
+                labelStyle.fontSize = _opfontsize;
+            }
             GUI.SetNextControlName("kalculator");
-            int tmpSize = GUI.skin.GetStyle("Label").fontSize;
-            GUI.skin.GetStyle("TextField").fontSize = _displayfontsize;
-            GUILayout.TextField(_currentnumber);
-            GUI.skin.GetStyle("TextField").fontSize = tmpSize;
-            tmpSize = GUI.skin.GetStyle("Label").fontSize;
-            GUI.skin.GetStyle("Label").fontSize = _opfontsize;
-            GUILayout.Label(_optoperform);
-            GUI.skin.GetStyle("Label").fontSize = tmpSize;
+
+            GUILayout.TextField(_currentnumber, textFieldStyle);
+            GUILayout.Label(_optoperform, labelStyle);
+
             GUILayout.BeginVertical();
             var _butttonOpts = new[] { GUILayout.Width(47f), GUILayout.ExpandWidth(false), GUILayout.Height(30f), GUILayout.ExpandHeight(false) };
             var _butttonOpts2 = new[] { GUILayout.Width(40f), GUILayout.ExpandWidth(false), GUILayout.Height(30f), GUILayout.ExpandHeight(false) };
@@ -163,30 +221,34 @@ namespace kalculator
             }
             if (GUILayout.Button("+/-", _butttonOpts))
             {
-                if (_currentnumber != "0")
+                if (_currentnumber != "0" && _currentnumber != "")
                 {
                     if (_currentnumber[0] != '-')
                         _currentnumber = _currentnumber.Insert(0, "-");
                     else
                         _currentnumber = _currentnumber.Remove(0, 1);
                 }
-                if (_isfirst && !_registers[0].ToString().Contains("-"))
-                    _registers[0] = -_registers[0];
+#if false
+                if (_isfirst && !registers[0].ToString().Contains("-"))
+                    registers[0] = -registers[0];
                 else if (_isfirst)
-                    _registers[0] = -_registers[0];
-                else if (!_isfirst && !_registers[1].ToString().Contains("-"))
-                    _registers[1] = -_registers[1];
+                    registers[0] = -registers[0];
+                else if (!_isfirst && !registers[1].ToString().Contains("-"))
+                    registers[1] = -registers[1];
                 else if (!_isfirst)
-                    _registers[1] = -_registers[1];
+                    registers[1] = -registers[1];
+#endif
             }
             if (GUILayout.Button("/", _butttonOpts))
                 OperatorPressed("/");
             if (GUILayout.Button("x", _butttonOpts))
                 OperatorPressed("x");
             if (GUILayout.Button("log", _butttonOpts2))
-                OperatorPressed("log");
+                FunctionPressed("log");
             if (GUILayout.Button("ln", _butttonOpts2))
-                OperatorPressed("ln");
+                FunctionPressed("ln");
+            if (GUILayout.Button("(", _butttonOpts))
+                FunctionPressed("(");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -202,6 +264,8 @@ namespace kalculator
                 OperatorPressed("10^x");
             if (GUILayout.Button("e^x", _butttonOpts2))
                 OperatorPressed("e^x");
+            if (GUILayout.Button(")", _butttonOpts))
+                FunctionPressed(")");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -253,9 +317,9 @@ namespace kalculator
             }
             GUI.contentColor = Color.white;
             if (GUILayout.Button("sin", _butttonOpts2))
-                OperatorPressed("sin");
+                FunctionPressed("sin");
             if (GUILayout.Button("cos", _butttonOpts2))
-                OperatorPressed("cos");
+                FunctionPressed("cos");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -267,11 +331,11 @@ namespace kalculator
                     AppendNumber(".");
             }
             if (GUILayout.Button("acos", _butttonOpts))
-                OperatorPressed("acos");
+                FunctionPressed("acos");
             if (GUILayout.Button("tan", _butttonOpts2))
-                OperatorPressed("tan");
+                FunctionPressed("tan");
             if (GUILayout.Button("sinh", _butttonOpts2))
-                OperatorPressed("sinh");
+                FunctionPressed("sinh");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -284,25 +348,25 @@ namespace kalculator
             if (GUILayout.Button("x^y", _butttonOpts))
                 OperatorPressed("x^y");
             if (GUILayout.Button("cosh", _butttonOpts2))
-                OperatorPressed("cosh");
+                FunctionPressed("cosh");
             if (GUILayout.Button("tanh", _butttonOpts2))
-                OperatorPressed("tanh");
+                FunctionPressed("tanh");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("cot", _butttonOpts))
-                OperatorPressed("cot");
+                FunctionPressed("cot");
             if (GUILayout.Button("sec", _butttonOpts))
-                OperatorPressed("sec");
+                FunctionPressed("sec");
 
             if (GUILayout.Button("%", _butttonOpts))
                 OperatorPressed("%");
             if (GUILayout.Button("y√x", _butttonOpts))
                 OperatorPressed("y√x");
             if (GUILayout.Button("asin", _butttonOpts2))
-                OperatorPressed("asin");
+                FunctionPressed("asin");
             if (GUILayout.Button("atan", _butttonOpts2))
-                OperatorPressed("atan");
+                FunctionPressed("atan");
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
@@ -311,7 +375,7 @@ namespace kalculator
             if (GUILayout.Button("MR", _butttonOpts))
                 RestoreMem();
             if (GUILayout.Button("csc", _butttonOpts))
-                OperatorPressed("csc");
+                FunctionPressed("csc");
             if (GUILayout.Button("!", _butttonOpts))
                 OperatorPressed("!");
             if (GUILayout.Button("<--", _butbackOpts))
@@ -334,12 +398,43 @@ namespace kalculator
             GUI.DragWindow();
         }
 
+        void DumpItemList()
+        {
+            for (int i = 0; i < itemList.Count; i++)
+            {
+                Debug.Log("item[" + i + "]: " + itemList[i].ToString());
+            }
+        }
+
+        private void FunctionPressed(string op)
+        {
+            switch (op)
+            {
+                case "(":
+                    itemList.Add(new StackItem(StackItem.ItemType.leftParan));
+                    break;
+                case ")":
+                    if (_currentnumber.Length > 0)
+                        StoreCurrentNumberInReg(0);
+                    itemList.Add(new StackItem(StackItem.ItemType.rightParan));
+                    break;
+                default:
+                    OperatorPressed(op);
+                    itemList.Add(new StackItem(StackItem.ItemType.leftParan));
+                    break;
+            }
+            DumpItemList();
+        }
+
         private void OperatorPressed(string op)
         {
-            StoreCurrentNumberInReg(0);
+            if (_currentnumber.Length > 0)
+                StoreCurrentNumberInReg(0);
             _isfirst = false;
             _clearscreen = true;
+            itemList.Add(new StackItem(op));
             _optoperform = op;
+            DumpItemList();
         }
 
         private void ClearCalcData()
@@ -347,151 +442,45 @@ namespace kalculator
             _isfirst = true;
             _clearscreen = true;
             _optoperform = "";
-            _currentnumber = "0";
-            for (int i = 0; i < _registers.Length; i++)
-                _registers[i] = 0;
+            _currentnumber = "";
+            itemList.Clear();
         }
 
         private void PerformOperation()
         {
-            switch (_optoperform)
-            {
-                case "+":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] + _registers[1]).ToString();
-                    break;
-                case "-":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] - _registers[1]).ToString();
-                    break;
-                case "x":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] * _registers[1]).ToString();
-                    break;
-                case "/":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[1] != 0) ? (_registers[0] / _registers[1]).ToString() : "NaN";
-                    break;
-                case "√x":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Sqrt(_registers[0])).ToString() : "NaN";
-                    break;
-                case "x^2":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Pow((_registers[0]), 2)).ToString() : "NaN";
-                    break;
-                case "1/x":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (1 / (_registers[0])).ToString() : "NaN";
-                    break;
-                case "x^y":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Pow(Convert.ToDouble(_registers[0]), Convert.ToDouble(_registers[1])).ToString()) : "NaN";
-                    break;
-                case "y√x":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Pow(Convert.ToDouble(_registers[0]), 1 / Convert.ToDouble(_registers[1])).ToString()) : "NaN";
-                    break;
-                case "%":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (_registers[0] * _registers[1] / 100).ToString() : "NaN";
-                    break;
-                case "log":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Log10(_registers[0])).ToString() : "NaN";
-                    break;
-                case "ln":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Log(_registers[0])).ToString() : "NaN";
-                    break;
-                case "10^x":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Pow(10, (_registers[0]))).ToString() : "NaN";
-                    break;
-                case "e^x":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Pow(Math.E, (_registers[0]))).ToString() : "NaN";
-                    break;
-                case "sin":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Sin((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "cos":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Cos((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "tan":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Tan((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "sinh":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Sinh((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "cosh":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Cosh((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "tanh":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Tanh((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "asin":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Asin(_registers[0]) * (180 / Math.PI)).ToString() : "NaN";
-                    break;
-                case "acos":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Acos(_registers[0]) * (180 / Math.PI)).ToString() : "NaN";
-                    break;
-                case "atan":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (Math.Atan(_registers[0]) * (180 / Math.PI)).ToString() : "NaN";
-                    break;
-                case "!":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (MathHelper.fact(_registers[0])).ToString() : "NaN";
-                    break;
-                case "cot":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (MathHelper.Cotan((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "sec":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (MathHelper.Sec((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "csc":
-                    if (_currentnumber != "NaN")
-                        _currentnumber = (_registers[0] != 0) ? (MathHelper.Cosec((_registers[0]) * (Math.PI / 180))).ToString() : "NaN";
-                    break;
-                case "":
-                    break;
-                default:
-                    Debug.LogError("Unknown operation: " + _optoperform);
-                    break;
+            if (_currentnumber.Length > 0)
+                StoreCurrentNumberInReg(0);
 
+            while (StackItem.openParens > 0)
+            {
+                FunctionPressed(")");
+                StackItem.openParens--;
             }
-            StoreCurrentNumberInReg(0);
+            DumpItemList();
+
+            ClearCalcData();
+
             _isfirst = true;
             _clearscreen = true;
         }
 
         private void StoreCurrentNumberInReg(int regNumber)
         {
-            _registers[regNumber] = float.Parse(_currentnumber, CultureInfo.InvariantCulture.NumberFormat);
+            double x = double.Parse(_currentnumber, CultureInfo.InvariantCulture.NumberFormat); ;
+            itemList.Add(new StackItem(x));
+            _currentnumber = "";
         }
 
         private void AppendNumber(string s)
         {
-            if ((_currentnumber == "0") || _clearscreen)
+            if ((_currentnumber == "0" || _currentnumber == "") || _clearscreen)
                 _currentnumber = s == "." ? "0." : s;
             else
                 if (_currentnumber.Length < _maxdigits)
-                    _currentnumber += s;
+                _currentnumber += s;
 
             if (_clearscreen)
                 _clearscreen = false;
-            StoreCurrentNumberInReg(_isfirst ? 0 : 1);
         }
 
         private void RemoveNumber()
@@ -500,7 +489,6 @@ namespace kalculator
 
             if (_clearscreen)
                 _clearscreen = false;
-            StoreCurrentNumberInReg(_isfirst ? 0 : 1);
         }
 
         private void GetInputFromCalc()
@@ -555,6 +543,7 @@ namespace kalculator
             _configfile.load();
 
             _calcsize = _configfile.GetValue("windowpos", new Rect(360, 20, 308, 365));
+            _calcsize = new Rect(360, 20, 308 + 47, 365);
             _keybind = _configfile.GetValue("keybind", "k");
             _versionlastrun = _configfile.GetValue<string>("version");
             _useKspSkin = _configfile.GetValue<bool>("KSPSkin", false);
@@ -586,8 +575,6 @@ namespace kalculator
             _currentnumber = _mem;
             if (_clearscreen)
                 _clearscreen = false;
-            StoreCurrentNumberInReg(_isfirst ? 0 : 1);
-
         }
 
         private void Toggle()
@@ -595,14 +582,14 @@ namespace kalculator
             if (_visible == true)
             {
                 _visible = false;
-                _button.TexturePath = _btextureOff;
-                _button.ToolTip = _tooltipOff;
+                //_button.TexturePath = _btextureOff;
+                //_button.ToolTip = _tooltipOff;
             }
             else
             {
                 _visible = true;
-                _button.TexturePath = _btextureOn;
-                _button.ToolTip = _tooltipOn;
+                //_button.TexturePath = _btextureOn;
+                //_button.ToolTip = _tooltipOn;
             }
         }
 

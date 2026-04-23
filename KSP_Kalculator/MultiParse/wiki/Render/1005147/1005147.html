@@ -1,0 +1,118 @@
+<div class="wikidoc"><h1>Getting started</h1>
+<ul><li><a href="#Installation">Installation</a></li>
+<li><a href="#First program">First program</a></li>
+<li><a href="#Choosing data types">Choosing data types</a></li>
+<li><a href="#Choosing operators">Choosing operators</a></li>
+<li><a href="#Choosing functions">Choosing functions</a></li></ul>
+<a name="Installation"></a>
+<h2>Installation</h2>
+To use the library in your project, first download the files from the download page and include the DLL in your project. For Microsoft Visual C# Express/Studio users, right-click &#39;References&#39; in the solution explorer and select &#39;Add Reference ...&#39;. Under the tab Browse, browse to the downloaded MultiParse.DLL file and click ok.<br /><br /><a name="First program"></a>
+<h2>First program</h2>
+Let&#39;s look at a simple console program to demonstrate.<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> MultiParse;
+
+<span style="color:Blue;">namespace</span> Tutorials
+{
+    <span style="color:Blue;">class</span> Program
+    {
+        <span style="color:Blue;">static</span> <span style="color:Blue;">void</span> Main(<span style="color:Blue;">string</span>[] args)
+        {
+            Expression e = <span style="color:Blue;">new</span> Expression();
+            e.ParseExpression = <span style="color:#A31515;">&quot;5*3+2*6-cos(3+8/3)*max(2,4)&quot;</span>; <span style="color:Green;">// returns 25.8653512581471</span>
+            Console.WriteLine(e.Evaluate());
+            e.ParseExpression = <span style="color:#A31515;">&quot;\&quot;Hello \&quot;+\&quot;World\&quot;&quot;</span>; <span style="color:Green;">// returns Hello World</span>
+            Console.WriteLine(e.Evaluate());
+            e.ParseExpression = <span style="color:#A31515;">@&quot;&quot;&quot;\x40&quot;&quot;&quot;</span>; <span style="color:Green;">// returns @</span>
+            Console.WriteLine(e.Evaluate());
+            Console.ReadKey();
+        }
+    }
+}
+</pre></div><br />Pretty simple isn&#39;t it? The constructor Expression() automatically loads support for all default data types, explicit type casts, operators and Math functions. All datatype literals are processed the same (if the defaults are used) as in C#. This means for example that the literal <i>&quot;str&quot;</i> will be processed as a string. The literal <i>5ul</i> will be detected as an unsigned long , <i>1.5f</i> as a float, etc.<br /><br />The first time the method Evaluate() is called, the expression will be compiled while being calculated. This means that subsequent evaluations will be processed faster because it then uses the compiled expression list. Assigning a new expression to <i>ParseExpression</i> will cause the method to recompile the complete string the next time Evaluate() is called.<br /><br />To be able to add your own custom types, I believe it will help that you have some knowledge about stack-based expression evaluation or RPN (Reverse Polish Notation). If you do not and you want to customize MultiParse, I recommend doing a quick read through the wiki page <a href="http://en.wikipedia.org/wiki/Reverse_Polish_notation">http://en.wikipedia.org/wiki/Reverse_Polish_notation</a>. The parser will however do most of the work for you. The parser itself is based on the Shunting Yard Algorithm by Dijkstra, which you can find described at <a href="http://en.wikipedia.org/wiki/Shunting-yard_algorithm">http://en.wikipedia.org/wiki/Shunting-yard_algorithm</a>.<br /><br /><a name="Choosing data types"></a>
+<h2>Choosing data types</h2>
+It is completely up to the user to decide what data types can be read by MultiParse. Take the next example:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> MultiParse;
+<span style="color:Blue;">using</span> MultiParse.Default;
+
+<span style="color:Blue;">namespace</span> Tutorials
+{
+    <span style="color:Blue;">class</span> Program
+    {
+        <span style="color:Blue;">static</span> <span style="color:Blue;">void</span> Main(<span style="color:Blue;">string</span>[] args)
+        {
+            Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double, MPDefault.Operators.All, MPDefault.Functions.None);
+            <span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;3+6/8&quot;</span>);
+            Console.WriteLine(result.ToString() + <span style="color:#A31515;">&quot; of type &quot;</span> + result.GetType());
+            Console.ReadKey();
+        }
+    }
+}
+</pre></div><br />This constructor will create a MultiParse expression object that can only read double literals, can work with all operators, but without any Math functions. As a result, although the evaluation string only contains integer literals (3, 6 and 8), the result will be a double because that is the only data type loaded that can read these literals.<br /><br />Each MultiParse expression object contains its own list of data types, operators and functions that can be accessed manually. The following example creates an expression object that can only read doubles and perform an explicit cast to double. It does <b>not</b> contain any operators or functions.<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double);
+e.ParseExpression = <span style="color:#A31515;">&quot;5&quot;</span>;
+<span style="color:Blue;">object</span> result = e.Evaluate();
+</pre></div><br />The following example is equivalent, but manually adds the data type and explicit type cast to their respective list:<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.None);
+
+<span style="color:Green;">// Add a literal parser for type double</span>
+e.DataTypes.Add(<span style="color:Blue;">new</span> MPDouble());
+
+<span style="color:Green;">// Add an explicit cast operator for type double</span>
+e.Operators.Add(<span style="color:Blue;">new</span> MPDoubleCast());
+</pre></div><br /><b>However</b>, and this is important: when adding anything manually to the lists <i>DataTypes</i>, <i>Operators</i> or <i>Functions</i> the order becomes important. The first item in the list will also be the first one that will be used by the parser. The following code for example will throw an exception:<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.None);
+
+<span style="color:Green;">// Add literal parsers for type double and int</span>
+e.DataTypes.Add(<span style="color:Blue;">new</span> MPDouble());
+e.DataTypes.Add(<span style="color:Blue;">new</span> MPInt32());
+e.ParseExpression = <span style="color:#A31515;">&quot;5&quot;</span>;
+<span style="color:Blue;">int</span> result = (<span style="color:Blue;">int</span>)e.Evaluate();
+</pre></div><br />The parser first tries to identify the <i>5</i> using the data type <i>MPDouble()</i> which succeeds. The <i>5</i> is consequently parsed as a double, and not as an integer. The result of <i>e.Evaluate()</i> is a double, and cannot be casted to an integer so it throws an exception. Changing the order in the list leads to code that does work:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Green;">// Add a literal parser for type double</span>
+e.DataTypes.Add(<span style="color:Blue;">new</span> MPInt32());
+e.DataTypes.Add(<span style="color:Blue;">new</span> MPDouble());
+e.ParseExpression = <span style="color:#A31515;">&quot;5&quot;</span>;
+<span style="color:Blue;">int</span> result = (<span style="color:Blue;">int</span>)e.Evaluate();
+</pre></div><br />The integer will now try to read <i>5</i> first resulting in an integer. If the parse expression is for example &quot;3.6&quot;, the integer data type will fail to read it, and the parser moves to the next data type in the list (a double). The data type MPDouble() succeeds in reading the literal, and the parser will use the parsed double.<br /><br />Each data type object is derived from the abstract class <i>MPDataType</i>. It is able to match an expression for a literal, and return an object that is pushed on the stack by the expression parser.<br /><br /><b>Variables</b><br />It is possible to use variables in your expression, given that the datatype MPVariable is included as a data type. The following example adds support for variables:<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double | MPDefault.DataTypes.Variable, MPDefault.Operators.All, MPDefault.Functions.None);
+e.Evaluate(<span style="color:#A31515;">&quot;c=3+6/8&quot;</span>);
+<span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;c*2&quot;</span>);
+</pre></div><br />Variables can be assigned to if the operator <i>MPAssignment</i> is included in the operator list. By default, new variables are generated on the fly, with their default value <i>null</i>. In some cases, this is not wanted as it makes debugging more difficult (e.g. it can recognize the variable <i>float</i> in the expression &quot;(float)3.6&quot; if the operator <i>(float)</i> is not added as an operator). This can be turned off using the following code:<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double | MPDefault.DataTypes.Variable, MPDefault.Operators.All, MPDefault.Functions.None);
+
+<span style="color:Green;">// Find variable datatypes</span>
+MPDataType[] vars = e.FindDataType(<span style="color:Blue;">typeof</span>(MPVariable));
+<span style="color:Blue;">foreach</span> (MPDataType <span style="color:Blue;">var</span> <span style="color:Blue;">in</span> vars)
+    (<span style="color:Blue;">var</span> <span style="color:Blue;">as</span> MPVariable).AutoGenerate = <span style="color:Blue;">false</span>;
+
+<span style="color:Green;">// Try to evaluate</span>
+e.Evaluate(<span style="color:#A31515;">&quot;c=3+6/8&quot;</span>);
+<span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;c*2&quot;</span>);
+</pre></div><br />The code will throw an exception if the variable does not exist. The variable can be added manually using:<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double | MPDefault.DataTypes.Variable, MPDefault.Operators.All, MPDefault.Functions.None);
+
+<span style="color:Green;">// Find variable datatypes</span>
+MPDataType[] vars = e.FindDataType(<span style="color:Blue;">typeof</span>(MPVariable));
+<span style="color:Blue;">foreach</span> (MPDataType <span style="color:Blue;">var</span> <span style="color:Blue;">in</span> vars)
+    (<span style="color:Blue;">var</span> <span style="color:Blue;">as</span> MPVariable).AutoGenerate = <span style="color:Blue;">false</span>;
+
+<span style="color:Green;">// Add the variable &quot;c&quot; with a value of the double 0.0</span>
+(vars[0] <span style="color:Blue;">as</span> MPVariable).Variables.Add(<span style="color:#A31515;">&quot;c&quot;</span>, <span style="color:Blue;">new</span> MPVariableInstance(0.0));
+
+<span style="color:Green;">// Try to evaluate</span>
+e.Evaluate(<span style="color:#A31515;">&quot;c=3+6/8&quot;</span>);
+<span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;c*2&quot;</span>);
+</pre></div><br />Custom data types are derived from the abstract class <i>MPDataType</i>. A data type is able to match a literal or variable at the start of an expression, and it returns the correct object that will be pushed on the output stack by the expression parser.<br /><br /><a name="Choosing operators"></a>
+<h2>Choosing operators</h2>
+The operators behave much like data types. But, instead of reading literals, they access the output stack directly. For example, the addition operator could execute using the following output stack:<br /><br /><div style="color:Black;background-color:White;"><pre>
+top = (<span style="color:Blue;">double</span>)3.6
+second = (<span style="color:Blue;">int</span>)6
+third = (<span style="color:Blue;">int</span>)-2
+</pre></div><br />The addition pops off the right operand <i>3.6</i> and left operand <i>6</i>, adds them resulting in <i>9.6</i> and pushes the result back on the stack. The stack after executing the operator results in:<br /><br /><div style="color:Black;background-color:White;"><pre>
+top = (<span style="color:Blue;">double</span>)9.6
+second = (<span style="color:Blue;">int</span>)-2
+</pre></div><br />Operators are derived from the abstract class <i>MPOperator</i>. It is able to match an operator at the start of an expression. It can also execute using the output stack.<br /><br /><a name="Choosing functions"></a>
+<h2>Choosing functions and brackets</h2>
+Brackets are structures that have a left and a right side and can have multiple arguments inside. For example, the regular round brackets are defined by a <b>(</b> and matches with a <b>)</b> and cannot have multiple arguments.<br />Functions can also be defined as such a bracketted structure. For example, the function <i>max(a,b)</i> has a left side <b>max(</b> and a right side <b>)</b> and can have multiple arguments inside delimited by a comma <b>,</b>. A function is therefore implemented as a special case of a bracket (<b>MPFunction</b> inherits from <b>MPBrackets</b>).<br /><br />So any functions derived from <i>MPFunction</i> have the form <i>fun(...)</i> and can have any number of arguments. By default, the functions of System.Math are implemented (except for DivRem) and work for lowercase or capitalized identifiers (eg. <i>cos()</i> and <i>Cos()</i> will work, but not <i>cOs()</i>).<br /><br />Next, we will see how we can create our own <a href="https://multiparse.codeplex.com/wikipage?title=Custom%20types&referringTitle=Getting%20started">Custom types</a>!</div><div class="ClearBoth"></div>

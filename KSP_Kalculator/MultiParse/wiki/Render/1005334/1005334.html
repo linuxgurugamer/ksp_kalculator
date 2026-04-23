@@ -1,0 +1,228 @@
+<div class="wikidoc"><h1>Custom functions</h1>
+<ul><li><a href="#MPBrackets">MPBrackets</a></li>
+<li><a href="#MPFunction">MPFunction</a></li>
+<li><a href="#Example - Complex number">Example - Complex number</a></li>
+<li><a href="#Example - Putting it all together">Example - Putting it all together</a></li></ul>
+<br /><a name="MPBrackets"></a>
+<h2>MPBrackets</h2>
+Brackets are defined by a left side, a right side and delimiters. The following methods need to be implemented:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Match for an opening bracket</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;bracketOpen&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">int</span> MatchOpen(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken);
+
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Match for a separator</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;separator&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">int</span> MatchSeparator(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken);
+
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Match for a closing bracket</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;bracketClose&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">int</span> MatchClose(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken);
+
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Matches</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;left&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;right&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">bool</span> BracketsMatch(MPBracketInfo left, <span style="color:Blue;">string</span> right);
+</pre></div><br /><b>MatchOpen()</b> is a method that will return the length of the opening bracket if the start of <i>expression</i> matches. For example, if a round opening bracket is found at the start of <i>expression</i>, then the method will return 1, else it will return -1. <b>MatchSeparator()</b> and <b>MatchClose()</b> will analogously check for a valid separator and closing bracket.<br />The method <b>MatchSeparator()</b> is called when a set of brackets is believed to be found. The structure <i>MPBracketInfo</i> contains the opening bracket and a list of all delimiters to check whether or not this set of brackets is valid. This is to check for errors with nested brackets (eg. for &quot;1+(2*<a href="https://multiparse.codeplex.com/wikipage?title=3%2b1%29%2a1&referringTitle=Custom%20functions">3&#43;1&#41;&#42;1</a>&quot;).<br /><br />The method <b>Execute()</b> is called at runtime and is by default doing nothing (like for normal round brackets), but it will still create an action on the action queue. If you would want to avoid this behavior you could also override the following method of MPBrackets:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> No action should be taken so just return null for the action</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;info&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">override</span> CompiledAction Action(Stack&lt;<span style="color:Blue;">object</span>&gt; output, MPBracketInfo info)
+{
+    <span style="color:Blue;">return</span> <span style="color:Blue;">null</span>;
+}
+</pre></div><br /><a name="MPFunction"></a>
+<h2>MPFunction</h2>
+Functions are relatively easy to implement compared to data types and operators. They are derived from an abstract class <i>MPFunction</i> which in turn inherits from the abstract class <i>MPBrackets</i>. This class provides some default implementations of <b>MatchOpen()</b>, <b>MatchClose()</b>, <b>MatchSeparator()</b>, <b>BracketsMatch()</b> and <b>Action()</b>. The derived class should still override the following method:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Executes the function. The function should pop the arguments from the output stack,</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> and push the result of the operation back.</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Green;">The output stack&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;arguments&quot;&gt;</span><span style="color:Green;">The number of arguments passed with the function&lt;/param&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">int</span> arguments);
+</pre></div><br />The function name is given with the constructor, and can be part of a regular expression. E.g. specifying [Aa]bs will match both Abs(...) and abs(...).<br />The parameter <i>arguments</i> contains the number of arguments that should be popped off the stack. If the function returns a value, that value should finally be pushed back on the output stack.<br />If the method does not pop the right amount of arguments off the stack, the user risks having a &quot;Stack empty&quot; exception or ending up with more than one objects on the stack after evaluation (Cannot resolve determined result - exception).<br /><br />The default Log() function for example is implemented as follows:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> System.Collections.Generic;
+
+<span style="color:Blue;">namespace</span> MultiParse.Default
+{
+    <span style="color:Blue;">public</span> <span style="color:Blue;">class</span> MPLog : MPFunction
+    {
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Constructor</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Blue;">public</span> MPLog()
+            : <span style="color:Blue;">base</span>(<span style="color:#A31515;">&quot;[lL]og&quot;</span>, <span style="color:Blue;">false</span>)
+        {
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Execute logarithm</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;arguments&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">int</span> arguments)
+        {
+            <span style="color:Green;">// This function needs two arguments</span>
+            <span style="color:Blue;">object</span> val, b;
+            <span style="color:Blue;">switch</span> (arguments)
+            {
+                <span style="color:Blue;">case</span> 1:
+                    val = PopOrGet(output);
+                    Log(output, val);
+                    <span style="color:Blue;">break</span>;
+                <span style="color:Blue;">case</span> 2:
+                    b = PopOrGet(output);
+                    val = PopOrGet(output);
+                    Log(output, val, b);
+                    <span style="color:Blue;">break</span>;
+                <span style="color:Blue;">default</span>:
+                    <span style="color:Blue;">throw</span> <span style="color:Blue;">new</span> InvalidArgumentCountException(1, 2, <span style="color:#A31515;">&quot;Log()&quot;</span>);
+            }
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Logarithm</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;arg&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Log(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">object</span> arg)
+        {
+            <span style="color:Blue;">double</span> d;
+            <span style="color:Blue;">if</span> (CastImplicit(arg, <span style="color:Blue;">out</span> d))
+                output.Push(Math.Log(d));
+            <span style="color:Blue;">else</span>
+                <span style="color:Blue;">throw</span> <span style="color:Blue;">new</span> InvalidArgumentTypeException(<span style="color:#A31515;">&quot;Log()&quot;</span>, arg);
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Logarithm</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;left&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;right&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Log(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">object</span> left, <span style="color:Blue;">object</span> right)
+        {
+            <span style="color:Blue;">double</span> d, b;
+            <span style="color:Blue;">if</span> (CastImplicit(left, <span style="color:Blue;">out</span> d) &amp;&amp; CastImplicit(right, <span style="color:Blue;">out</span> b))
+                output.Push(Math.Log(d, b));
+            <span style="color:Blue;">else</span>
+                <span style="color:Blue;">throw</span> <span style="color:Blue;">new</span> InvalidArgumentTypeException(<span style="color:#A31515;">&quot;Log()&quot;</span>, left, right);
+        }
+    }
+}
+</pre></div><br />This function accepts either one or two arguments. It is recognized by either the keyword log and Log followed by an opening bracket.<br /><br /><a name="Example - Complex number"></a>
+<h2>Example - Complex number</h2>
+As an example, we will implement the Abs function. We can again implement the function by deriving it from <i>MPAbs()</i>.<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">public</span> <span style="color:Blue;">class</span> ComplexAbs : MultiParse.Default.MPAbs
+{
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Execute absolute value</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;arguments&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">int</span> arguments)
+    {
+        <span style="color:Green;">// Check the argument count</span>
+        <span style="color:Blue;">if</span> (arguments != 1)
+            <span style="color:Blue;">throw</span> <span style="color:Blue;">new</span> InvalidArgumentCountException(1, <span style="color:#A31515;">&quot;Abs()&quot;</span>);
+
+        <span style="color:Green;">// Pop the argument</span>
+        <span style="color:Blue;">object</span> top = PopOrGet(output);
+        <span style="color:Blue;">if</span> (top <span style="color:Blue;">is</span> Complex)
+            Abs(output, (Complex)top);
+        <span style="color:Blue;">else</span>
+            Abs(output, top);
+    }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Absolute value</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;c&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Abs(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex c)
+    {
+        output.Push(Math.Sqrt(c.Real * c.Real + c.Imag * c.Imag));
+    }
+}
+</pre></div><br />Finally we add the function to the expression parser, and voila:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> MultiParse;
+<span style="color:Blue;">using</span> MultiParse.Default;
+<span style="color:Blue;">using</span> Tutorials.Complex;
+
+<span style="color:Blue;">namespace</span> Tutorials
+{
+    <span style="color:Blue;">class</span> Program
+    {
+        <span style="color:Blue;">static</span> <span style="color:Blue;">void</span> Main(<span style="color:Blue;">string</span>[] args)
+        {
+            Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double);
+            e.DataTypes.Add(<span style="color:Blue;">new</span> ComplexDataType());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexAddition());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexSubtraction());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexMultiplication());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexDivision());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexPower());
+            e.Functions.Add(<span style="color:Blue;">new</span> ComplexAbs());
+
+            <span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;abs(1+i)&quot;</span>); <span style="color:Green;">// Returns 1.1412135623731 (=Sqrt(2))</span>
+            Console.WriteLine(result + <span style="color:#A31515;">&quot; &quot;</span> + result.GetType().ToString());
+            Console.ReadKey();
+        }
+    }
+}
+</pre></div><br /><a name="Example - Putting it all together"></a>
+<h2>Example - Putting it all together</h2>
+We now have a pretty complete parser for evaluating complex numbers. The following code demonstrates how it can all be put together, making it almost trivial!<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> MultiParse;
+<span style="color:Blue;">using</span> MultiParse.Default;
+<span style="color:Blue;">using</span> Tutorials.Complex;
+
+<span style="color:Blue;">namespace</span> Tutorials
+{
+    <span style="color:Blue;">class</span> Program
+    {
+        <span style="color:Blue;">static</span> <span style="color:Blue;">void</span> Main(<span style="color:Blue;">string</span>[] args)
+        {
+            Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double | MPDefault.DataTypes.Variable);
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexAddition());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexSubtraction());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexMultiplication());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexDivision());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexPower());
+            e.Functions.Add(<span style="color:Blue;">new</span> ComplexAbs());
+            e.DataTypes.Insert(0, <span style="color:Blue;">new</span> ComplexDataType()); <span style="color:Green;">// We want to test for an imaginary number before any variables!</span>
+            MPDefault.RegisterOperators(e.Operators, MPDefault.Operators.Assignment);
+
+            <span style="color:Green;">// Try to evaluate</span>
+            e.Evaluate(<span style="color:#A31515;">&quot;c=3+6/8*i&quot;</span>);
+            <span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;abs(c)&quot;</span>);
+            Console.WriteLine(result.ToString() + <span style="color:#A31515;">&quot; of type &quot;</span> + result.GetType());
+            Console.ReadKey();
+        }
+    }
+}
+</pre></div><br />This concludes the tutorial. You can always reference the <a href="https://multiparse.codeplex.com/wikipage?title=Source%20Code&referringTitle=Custom%20functions">Source Code</a> as a reference for extra information about the helper functions and the inner workings.</div><div class="ClearBoth"></div>

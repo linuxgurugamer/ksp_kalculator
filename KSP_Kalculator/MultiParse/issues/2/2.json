@@ -1,0 +1,45 @@
+{
+  "WorkItem": {
+    "AffectedComponent": {
+      "Name": "",
+      "DisplayName": ""
+    },
+    "ClosedComment": "",
+    "ClosedDate": null,
+    "CommentCount": 1,
+    "Custom": null,
+    "Description": "Since `System.Drawing.Color` and `System.Windows.Media.Color` both have arithmetic operators defined (+, -, * and /), please consider adding it to build in datatypes; so we can evaluate expressions like `#fff + #eee - (#ddee55 / #111222)`. The color codes and color names tokens can be resolved to RGB using `System.Drawing.ColorTranslator.FromHtml(\"lightblue\")`.\r\n\r\nThe interoperability between System.Windows.Media.Color and System.Drawing.Color is safely possible via RGB.\r\n\r\nMore complicated expression would be if it involve numeric, e.g. `#fffddd + 5`, which should add 5 to all three tones individually Color.R + 5, Color.G + 5 and Color.B + 5.\r\n\r\nCurrently, the operator doesn't support numeric signatures: https://connect.microsoft.com/VisualStudio/feedback/details/828056/colormath-system-windows-media-color-and-system-drawing-color-to-have-operators-accepting-numeric\r\n\r\nWithout having those mixed operators, one approach could be to normalize all tokens to hex triplet `#XXXXX` or `#XXX` if applicable:\r\n\r\n```c#\r\nusing System.Drawing;\r\n...\r\n...\r\n\r\nvar color = ColorTranslator.FromHtml(token);\r\n\r\nif(color == null)\r\n{\r\n    int num;\r\n    if(!int.TryParse(token, out num))\r\n        return null; // the token is not a number\r\n\r\n    // Each channel shouldn't be greater than FF (255)\r\n    num = (num > 255) ? 255 : num; \r\n\r\n                 // will convert to short code as well (e.g. #fff),\r\n                 // or X2 for strictly six digits (#ffffff)\r\n    var str = num.ToString(\"X\");\r\n    str = string.Format(CultureInfo.CurrentCulture, \"#{0}{0}{0}\", str);\r\n\r\n    color = ColorTranslator.FromHtml(str);                  \r\n}\r\n\r\nif(color == null)\r\n    return null; // The token is neither number nor known color\r\n    \r\n// Now do something with the normalized to color token\r\n```\r\n",
+    "LastUpdatedDate": "2014-03-17T14:57:36.05-07:00",
+    "PlannedForRelease": "",
+    "ReleaseVisibleToPublic": false,
+    "Priority": {
+      "Name": "Unassigned",
+      "Severity": 0,
+      "Id": 0
+    },
+    "ProjectName": "multiparse",
+    "ReportedDate": "2014-03-04T09:48:43.683-08:00",
+    "Status": {
+      "Name": "Proposed",
+      "Id": 1
+    },
+    "ReasonClosed": {
+      "Name": "Unassigned"
+    },
+    "Summary": "Support color data types",
+    "Type": {
+      "Name": "Unassigned",
+      "Id": 5
+    },
+    "VoteCount": 1,
+    "Id": 2
+  },
+  "FileAttachments": [],
+  "Comments": [
+    {
+      "Message": "Hello,\n\nSystem.Drawing.Color is not a native datatype. It is a class with operator overloads. I will not include this feature in the \"standard\" package, but I'm willing to guide you through making your own color expression parser.\n\nYou will need the following classes:\n* MPColor that implements the abstract class MPDataType.\n** Override the method Match() and make it parse the start of the string as a color. Return the length of the parsed string (-1 if no match) and convertedToken should contain the Color object. In your case it should match a # followed by hexadecimal numbers.\n* MPColorAddition/MPColorSubtraction/MPColorMultiplication and MPColorDivision that implement MultiParse.Default.MPAddition/MPSubtraction/MPMultiplication and MPDivision.\n** Each class should override the method Execute(). You can check the matrix and complex number examples to see how they should work.\n\nIf you need more help, do not feel hesitated to ask.\n\nYours sincerely,\nSven",
+      "PostedDate": "2014-03-17T14:57:36.05-07:00",
+      "Id": 137156
+    }
+  ]
+}

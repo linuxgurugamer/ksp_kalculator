@@ -1,0 +1,160 @@
+<div class="wikidoc"><h1>Custom types</h1>
+<ul><li><a href="#MPDataType">MPDataType</a></li>
+<li><a href="#Variables">Variables</a></li>
+<li><a href="#Example - Complex number">Example - Complex number</a>
+<ul><li><a href="#Complex">Complex</a></li>
+<li><a href="#Data type">Data type</a></li></ul></li></ul>
+<a name="MPDataType"></a>
+<h2>MPDataType</h2>
+Any data type should be derived from the abstract class MultiParse.MPDataType. The derived class should override the following method:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Returns -1 if the operator doesn&#39;t match. Else it returns the length of the matched string.</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Green;">The expression&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Green;">The previous expression&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">int</span> Match(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken, <span style="color:Blue;">out</span> <span style="color:Blue;">object</span> convertedToken);
+</pre></div><br />The expected behaviour of this method is described here.<br /><br />The parameter <i>expression</i> contains a part of the original expression string. The method should match a token <b>at the start</b> of <i>expression</i>. If the data type could not match a token, then it returns <i>-1</i>. If the start of <i>expression</i> can be recognized as the data type, then it returns the length of the matched string.<br />The parameter <i>previousToken</i> contains the last recognized token by the parser, and can be used to determine if a unary operator is allowed (such as the &#39;-&#39; in negative values).<br />The object <i>convertedToken</i> contains the matched object and is pushed on the output stack by the expression parser.<br /><br />Take for example the default implementation for an integer, the class MultiParse.Default.MPInt32():<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> System.Text.RegularExpressions;
+
+<span style="color:Blue;">namespace</span> MultiParse.Default
+{
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> A class able to parse integers</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">class</span> MPInt32 : MPDataType
+    {
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Matches an integer at the start of an expression and returns the length of the matched string</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Green;">The expression that possibly starts with a token representing an integer&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Green;">The last parsed token&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;converted&quot;&gt;</span><span style="color:Green;">Contains the converted token&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">int</span> Match(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken, <span style="color:Blue;">out</span> <span style="color:Blue;">object</span> converted)
+        {
+            <span style="color:Blue;">string</span> sign = <span style="color:#A31515;">@&quot;^&quot;</span>;
+            <span style="color:Blue;">if</span> (IsUnary(previousToken))
+                sign = <span style="color:#A31515;">@&quot;^[\+\-]?&quot;</span>;
+
+            <span style="color:Green;">// Match an integer</span>
+            Match m = Regex.Match(expression, sign + <span style="color:#A31515;">@&quot;\d+(?![\w\.])&quot;</span>);
+            <span style="color:Blue;">if</span> (m.Success)
+            {
+                <span style="color:Blue;">try</span>
+                {
+                    converted = Int32.Parse(m.Value);
+                }
+                <span style="color:Blue;">catch</span> (Exception)
+                {
+                    converted = <span style="color:Blue;">null</span>;
+                    <span style="color:Blue;">return</span> -1;
+                }
+                <span style="color:Blue;">return</span> m.Length;
+            }
+
+            <span style="color:Green;">// Default</span>
+            converted = <span style="color:Blue;">null</span>;
+            <span style="color:Blue;">return</span> -1;
+        }
+    }
+}
+</pre></div><br />The first part of the code checks whether or not a unary operator is expected, using the inherited method <i>IsUnary(object previousToken)</i>. If a unary operator can be expected, it is possible to have a sign before the actual number.<br />The expression is matched using a <a href="http://msdn.microsoft.com/en-us/library/az24scfc(v=vs.110).aspx">Regular Expression</a>. The regular expression can be ^\d+(?![\w\.]) in which case it only matches a series of digits, not followed by a character or a dot. If a unary operator is possible, then the regular expression is ^[\+\-]?\d+(?![\w\.]) in which case a &#39;+&#39; or a &#39;-&#39; can come before the digits.<br /><br />If the match is a success, the string can be converted to an integer, and the length of the match is returned. In any other case, null is assigned to <i>convertedToken</i> and a length of -1 is returned.<br /><br /><a name="Variables"></a>
+<h2>Variables</h2>
+Variables are a bit special as they are able to change their value during evaluation. To this effect, two interfaces are implemented:
+<ul><li>IMPAssignable: An interface that allows assignment of a value to the object</li>
+<li>IMPGettable: An interface that allows extracting a value from the object</li></ul>
+<br />They implement the methods:<br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">void</span> Assign(<span style="color:Blue;">object</span> value); <span style="color:Green;">// For an IMPAssignable</span>
+<span style="color:Blue;">object</span> Get(); <span style="color:Green;">// For an IMPGettable</span>
+</pre></div><br />When an operator pops an object from the stack, it will need to check for the interface and &quot;Get&quot; or &quot;Assign&quot; it if necessary. More on this in the next chapter about <a href="https://multiparse.codeplex.com/wikipage?title=Custom%20operators&referringTitle=Custom%20types">Custom operators</a>.<br /><br />The default implementation of the Variable data type is untyped. This means that variables can contain values of any type, being it strings, numbers or even objects like custom data types.<br /><br /><a name="Example - Complex number"></a>
+<h2>Example - Complex number</h2>
+An example is given here for parsing complex numbers. It would be nice to calculate expressions using the imaginary number i. for example &quot;1+2*i&quot; should give a complex number object that has real part 1 and imaginary part 2. Breaking the expression down, we can describe it as<br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:#A31515;">&quot;1+2*i&quot;</span> = (<span style="color:Blue;">double</span>) + (<span style="color:Blue;">double</span>) * (Complex)
+</pre></div><br />In other words, our complex data type only needs to be able to read the character i, provided there are operators that can work with complex numbers.<br /><br />Broken down, there are three things needed to recognize the complex data type:
+<ul><li>A complex data class</li>
+<li>A data type that can read the imaginary number</li>
+<li>The operators +, -, *, / and ^ that can work with complex numbers</li></ul>
+<br /><a name="Complex"></a>
+<h3>Complex</h3>
+For the sake of the tutorial, this class will be kept as simple as possible. No operator overloading will be necessary for the parser, as that is handled by the parser MPOperator.<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> A class defining a complex number</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">struct</span> Complex
+{
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> The real part of the complex number</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">double</span> Real;
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> The imaginary part of the complex number</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">double</span> Imag;
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Constructor</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;real&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;imag&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> Complex(<span style="color:Blue;">double</span> real, <span style="color:Blue;">double</span> imag)
+    {
+        Real = real;
+        Imag = imag;
+    }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> String representation</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">string</span> ToString()
+    {
+        <span style="color:Blue;">return</span> Real + <span style="color:#A31515;">&quot;+i*&quot;</span> + Imag;
+    }
+}
+</pre></div><br /><a name="Data type"></a>
+<h3>Data type</h3>
+The complex data type class itself only needs to be able to read the letter <i>i</i>. Of course, this i should not be followed by another character or digit. This needs to be taken care of as well by the data type class. The implementation is as follows:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> System.Text.RegularExpressions;
+
+<span style="color:Blue;">namespace</span> MultiParseComplex.ComplexLib
+{
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> A class describing the complex data type</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">class</span> ComplexDataType : MultiParse.MPDataType
+    {
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> The imaginary variable</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">string</span> ImaginaryVariable = <span style="color:#A31515;">&quot;i&quot;</span>;
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Match an expression for the imaginary variable i</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;convertedToken&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">int</span> Match(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken, <span style="color:Blue;">out</span> <span style="color:Blue;">object</span> convertedToken)
+        {
+            Match m = Regex.Match(expression, <span style="color:#A31515;">@&quot;^&quot;</span> + ImaginaryVariable + <span style="color:#A31515;">@&quot;(?![\w\.])&quot;</span>);
+            <span style="color:Blue;">if</span> (m.Success)
+            {
+                convertedToken = <span style="color:Blue;">new</span> Complex(0, 1);
+                <span style="color:Blue;">return</span> m.Length;
+            }
+
+            <span style="color:Green;">// Not found</span>
+            convertedToken = <span style="color:Blue;">null</span>;
+            <span style="color:Blue;">return</span> -1;
+        }
+    }
+}
+</pre></div><br />We will leave the possibility of having a unary &#39;+&#39; or &#39;-&#39; before the <i>i</i> aside here. This can also be implemented as an operator later if wanted. The regular expression will succeed if <i>expression</i> starts with an <i>i</i> without having a character, number, underscore or dot after it. If a match is found, the imaginary number is returned via <i>convertedToken</i>.<br /><br />Finally, we still need to add our newly created data type to the expression parser.<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double);
+e.DataTypes.Add(<span style="color:Blue;">new</span> ComplexDataType());
+</pre></div><br />Unfortunately it is now only able to parse simple expressions like &quot;i&quot;, &quot;1.5&quot;, etc. The expression &quot;1-i&quot; will not work, as it needs the binary {&#39;-&#39;} operator.<br /><br />That was not so bad was it? On to <a href="https://multiparse.codeplex.com/wikipage?title=Custom%20operators&referringTitle=Custom%20types">Custom operators</a> now!</div><div class="ClearBoth"></div>

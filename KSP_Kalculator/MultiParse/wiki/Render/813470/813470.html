@@ -1,0 +1,360 @@
+<div class="wikidoc"><h1>Custom operators</h1>
+<ul><li><a href="#MPOperator">MPOperator</a></li>
+<li><a href="#Example - Complex number">Example - Complex number</a>
+<ul><li><a href="#Complex addition">Complex addition</a></li>
+<li><a href="#Complex subtraction">Complex subtraction</a></li>
+<li><a href="#Complex multiplication">Complex multiplication</a></li>
+<li><a href="#Complex division">Complex division</a></li>
+<li><a href="#Complex exponentiation">Complex exponentiation</a></li></ul></li></ul>
+<a name="MPOperator"></a>
+<h2>MPOperator</h2>
+Any operator is to be derived from the abstract class MPOperator. The derived class should override the following methods:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Returns -1 if the operator doesn&#39;t match. Else it returns the length of the matched string.</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Green;">The expression&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Green;">The previous expression&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">int</span> Match(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken);
+
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Returns an object while altering the stack</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">abstract</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output);
+</pre></div><br />The method <i>Match()</i> will return -1 if the start of <i>expression</i> is not recognized.<br />The object <i>previoustoken</i> can be used to determine if a unary operator can be expected in the same way as for data types.<br /><br />The method <i>Execute()</i> will do whatever it is supposed to do using the output stack. This stack contains the operands for the operator, and the result should be pushed back on the stack.<br /><br />An example implementation can be found here for the unary operator +:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> System.Text.RegularExpressions;
+<span style="color:Blue;">using</span> System.Collections.Generic;
+
+<span style="color:Blue;">namespace</span> MultiParse.Default
+{
+    <span style="color:Blue;">public</span> <span style="color:Blue;">class</span> MPPositive : MPOperator
+    {
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Constructor</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Blue;">public</span> MPPositive()
+            : <span style="color:Blue;">base</span>(<span style="color:#A31515;">&quot;+&quot;</span>, PrecedenceUnary, <span style="color:Blue;">false</span>)
+        {
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Find unary positive</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;expression&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;previousToken&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;returns&gt;</span><span style="color:Gray;">&lt;/returns&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">int</span> Match(<span style="color:Blue;">string</span> expression, <span style="color:Blue;">object</span> previousToken)
+        {
+            <span style="color:Blue;">if</span> (!IsUnary(previousToken))
+                <span style="color:Blue;">return</span> -1;
+            <span style="color:Blue;">if</span> (Regex.IsMatch(expression, <span style="color:#A31515;">@&quot;^\+(?![\+\=])&quot;</span>))
+                <span style="color:Blue;">return</span> 1;
+            <span style="color:Blue;">return</span> -1;
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Execute unary positive</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output)
+        {
+            <span style="color:Green;">// Pop object from the stack</span>
+            <span style="color:Blue;">object</span> top = PopOrGet(output);
+            Positive(output, top);
+        }
+
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+        <span style="color:Gray;">///</span><span style="color:Green;"> Positive</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;operand&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+        <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Positive(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">object</span> operand)
+        {
+            TypeCode tc = Type.GetTypeCode(operand.GetType());
+            <span style="color:Blue;">switch</span> (tc)
+            {
+                <span style="color:Blue;">case</span> TypeCode.Byte: output.Push(+(Byte)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.Char: output.Push(+(Char)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.Decimal: output.Push(+(Decimal)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.Double: output.Push(+(Double)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.Int16: output.Push(+(Int16)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.Int32: output.Push(+(Int32)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.Int64: output.Push(+(Int64)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.SByte: output.Push(+(SByte)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.Single: output.Push(+(Single)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.UInt16: output.Push(+(UInt16)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.UInt32: output.Push(+(UInt32)operand); <span style="color:Blue;">return</span>;
+                <span style="color:Blue;">case</span> TypeCode.UInt64: output.Push(+(UInt64)operand); <span style="color:Blue;">return</span>;
+            }
+
+            <span style="color:Green;">// Invalid operation</span>
+            <span style="color:Blue;">throw</span> <span style="color:Blue;">new</span> InvalidOperatorTypesException(<span style="color:#A31515;">&quot;+&quot;</span>, operand);
+        }
+    }
+}
+</pre></div><br />The constructor assigns the right <a href="http://msdn.microsoft.com/en-us/library/aa691323(v=vs.71).aspx">precedence and associativity</a> to the operator via the base constructor. The static variable PrecedenceUnary contains the standard precedence level for unary operations. It is specified to be right-associative, meaning that ++8 = +(+8), as ((+)+)8 would not make sense. Note that C# also recognizes ++ as an operator, so for C# this expression is invalid.<br /><br />To match the expression, the operator first determines whether or not the operator is unary. If it isn&#39;t, then it is probably the addition operator, which is binary.<br /><br />Executing the operator is done by first popping the operands off the stack. Because the evaluation is stack based, they need to be popped <b>in reverse order</b> for binary operators (i.e. first the right operator, then the left operator). But because this operator is unary, it doesn&#39;t matter. Popping the operand from the stack is done by the method <b>PopOrGet()</b>. This method also checks whether or not the object implements the <b>IMPGettable</b> interface. If it does, then it calls the method <i>Get()</i> and returns that object instead.<br /><br />The method <i>Positive()</i> will first convert the object to its respective type, based on its type code. This introduces a small decrease in performance, because an object is constantly casted to its actual type. But in return, we get a very powerful and versatile expression parser!<br /><br /><a name="Example - Complex number"></a>
+<h2>Example - Complex number</h2>
+There are in total 7 operators that will be defined for being able to work with complex numbers. These are:
+<ul><li>Binary +: addition</li>
+<li>Binary -: subtraction</li>
+<li>Binary *: multiplication</li>
+<li>Binary /: division</li>
+<li>Unary +: positive of a number</li>
+<li>Unary -: negative of a number</li>
+<li>Binary ^: power of numbers</li></ul>
+<br />In this case, the unary + will not have any effect on the answers (+var = var). The sole purpose of this operator is to be able to parse it. If this operator is not added, then it is impossible to parse expressions like 1+(+3)*+i. It would not recognize <i>+3</i> and <i>+i</i>. The unary operators will not be discussed in this tutorial, and are left to the reader.<br /><br />To save ourselves from a lot of work, we can implement each of these operators simply by deriving their respective default operators MPAddition(), MPSubtraction(), MPMultiplication(), MPDivision(), MPPositive() and MPNegative(). That way we don&#39;t have to implement the string matching algorithms, and we only need to override the <i>Execute()</i> method.<br /><br /><a name="Complex addition"></a>
+<h3>Complex addition</h3>
+The complex addition is implemented as follows:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> The complex addition is an extension on the standard addition</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">class</span> ComplexAddition : MultiParse.Default.MPAddition
+{
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Complex addition</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output)
+    {
+        <span style="color:Green;">// Pop the operands off the stack</span>
+        <span style="color:Blue;">object</span> right = PopOrGet(output);
+        <span style="color:Blue;">object</span> left = PopOrGet(output);
+        <span style="color:Blue;">double</span> d;
+
+        <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; right <span style="color:Blue;">is</span> Complex)
+            Add(output, (Complex)left, (Complex)right);
+        <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; CastImplicit(right, <span style="color:Blue;">out</span> d))
+            Add(output, (Complex)left, d);
+        <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (right <span style="color:Blue;">is</span> Complex &amp;&amp; CastImplicit(left, <span style="color:Blue;">out</span> d))
+            Add(output, d, (Complex)right);
+        <span style="color:Blue;">else</span>
+
+            <span style="color:Green;">// Attempt a standard addition</span>
+            <span style="color:Blue;">base</span>.Add(output, left, right);
+    }
+
+    <span style="color:Green;">// Addition</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Add(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, Complex right)
+    {
+        output.Push(<span style="color:Blue;">new</span> Complex(left.Real + right.Real, left.Imag + right.Imag));
+    }
+    <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Add(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">double</span> left, Complex right)
+    {
+        output.Push(<span style="color:Blue;">new</span> Complex(left + right.Real, right.Imag));
+    }
+    <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Add(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, <span style="color:Blue;">double</span> right)
+    {
+        output.Push(<span style="color:Blue;">new</span> Complex(left.Real + right, left.Imag));
+    }
+}
+</pre></div><br />The operands are popped <b>in reverse order</b>, first right then left. If both objects are Complex objects, then we invoke the method for two complex objects.<br />Another possibility is to have the complex number being added to a double. If we were to use the line<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; right <span style="color:Blue;">is</span> Double)
+</pre></div><br />then the addition would only work for the combination of Complex+double. It would be nice to also allow for implicit conversions. E.g. an integer can be implicitly converted to a double. So by means of implicit conversion, the addition will also work for Complex+double, Complex+int, Complex+uint, Complex+long, Complex+ulong, Complex+byte, Complex+sbyte, etc. <br /><br />To accommodate for this, helper methods are provided that can implicitly cast an object to a native type. If the implicit cast is successful, then <i>CastImplicit()</i> returns <i>True</i>. The second parameter will then contain the implicitly converted variable, in our example the double <i>d</i>.<br />Finally, the combination of double+Complex is implemented as well. If any of these fail (they are not a combination Complex and a type that can be cast to a double), then the base method is called. This method will perform the addition for any of the native types, and throw an error if the addition still fails.<br /><br />This operator is finally added to the MultiParse expression object.<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double);
+e.DataTypes.Add(<span style="color:Blue;">new</span> ComplexDataType());
+e.Operators.Add(<span style="color:Blue;">new</span> ComplexAddition());
+</pre></div><br />The operators -, * and / are completely analogous.<br /><br /><a name="Complex subtraction"></a>
+<h3>Complex subtraction</h3>
+<div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output)
+{
+    <span style="color:Blue;">object</span> right = output.Pop();
+    <span style="color:Blue;">object</span> left = output.Pop();
+    <span style="color:Blue;">double</span> d;
+    <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; right <span style="color:Blue;">is</span> Complex)
+        Subtract(output, (Complex)left, (Complex)right);
+    <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; CastImplicit(right, <span style="color:Blue;">out</span> d))
+        Subtract(output, (Complex)left, d);
+    <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (CastImplicit(left, <span style="color:Blue;">out</span> d) &amp;&amp; right <span style="color:Blue;">is</span> Complex)
+        Subtract(output, d, (Complex)right);
+    <span style="color:Blue;">else</span>
+        <span style="color:Blue;">base</span>.Execute(output);
+}
+
+<span style="color:Green;">// Complex subtraction</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Subtract(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, Complex right)
+{
+    output.Push(<span style="color:Blue;">new</span> Complex(left.Real - right.Real, left.Imag - right.Imag));
+}
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Subtract(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, <span style="color:Blue;">double</span> right)
+{
+    output.Push(<span style="color:Blue;">new</span> Complex(left.Real - right, left.Imag));
+}
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Subtract(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">double</span> left, Complex right)
+{
+    output.Push(<span style="color:Blue;">new</span> Complex(left - right.Real, -right.Imag));
+}
+</pre></div><br /><a name="Complex multiplication"></a>
+<h3>Complex multiplication</h3>
+<div style="color:Black;background-color:White;"><pre>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+<span style="color:Gray;">///</span><span style="color:Green;"> Complex multiplication</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+<span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output)
+{
+    <span style="color:Green;">// Find the operands</span>
+    <span style="color:Blue;">object</span> right = output.Pop();
+    <span style="color:Blue;">object</span> left = output.Pop();
+    <span style="color:Blue;">double</span> d;
+
+    <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; right <span style="color:Blue;">is</span> Complex)
+        Multiply(output, (Complex)left, (Complex)right);
+    <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; CastImplicit(right, <span style="color:Blue;">out</span> d))
+        Multiply(output, (Complex)left, d);
+    <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (right <span style="color:Blue;">is</span> Complex &amp;&amp; CastImplicit(left, <span style="color:Blue;">out</span> d))
+        Multiply(output, d, (Complex)right);
+    <span style="color:Blue;">else</span>
+
+        <span style="color:Green;">// Attempt a standard addition</span>
+        <span style="color:Blue;">base</span>.Multiply(output, left, right);
+}
+
+<span style="color:Green;">// Complex multiplication</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Multiply(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, Complex right)
+{
+    output.Push(<span style="color:Blue;">new</span> Complex(left.Real * right.Real - left.Imag * right.Imag, left.Real * right.Imag + left.Imag * right.Real));
+}
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Multiply(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, <span style="color:Blue;">double</span> right)
+{
+    output.Push(<span style="color:Blue;">new</span> Complex(left.Real * right, left.Imag * right));
+}
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Multiply(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">double</span> left, Complex right)
+{
+    output.Push(<span style="color:Blue;">new</span> Complex(left * right.Real, left * right.Imag));
+}
+</pre></div><br /><a name="Complex division"></a>
+<h3>Complex division</h3>
+<div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output)
+{
+    <span style="color:Blue;">object</span> right = output.Pop();
+    <span style="color:Blue;">object</span> left = output.Pop();
+    <span style="color:Blue;">double</span> d;
+    <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; right <span style="color:Blue;">is</span> Complex)
+        Divide(output, (Complex)left, (Complex)right);
+    <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; CastImplicit(right, <span style="color:Blue;">out</span> d))
+        Divide(output, (Complex)left, d);
+    <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (CastImplicit(left, <span style="color:Blue;">out</span> d) &amp;&amp; right <span style="color:Blue;">is</span> Complex)
+        Divide(output, d, (Complex)right);
+    <span style="color:Blue;">else</span>
+        <span style="color:Blue;">base</span>.Execute(output);
+}
+
+<span style="color:Green;">// Complex / Complex division</span>
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Divide(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, Complex right)
+{
+    <span style="color:Blue;">double</span> abssq = right.Real * right.Real + right.Imag * right.Imag;
+    output.Push(<span style="color:Blue;">new</span> Complex((left.Real * right.Real + left.Imag * right.Imag) / abssq, (right.Real * left.Imag - right.Imag * left.Real) / abssq));
+}
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Divide(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, <span style="color:Blue;">double</span> right)
+{
+    output.Push(<span style="color:Blue;">new</span> Complex(left.Real / right, left.Imag / right));
+}
+<span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Divide(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">double</span> left, Complex right)
+{
+    <span style="color:Blue;">double</span> abssq = right.Real * right.Real + right.Imag * right.Imag;
+    output.Push(<span style="color:Blue;">new</span> Complex(left * right.Real / abssq, -left * right.Imag / abssq));
+}
+</pre></div><br /><a name="Complex exponentiation"></a>
+<h3>Complex exponentiation</h3>
+The complex exponentiation will need a little bit different of an approach for the following reasons
+<ul><li>The operator ^ is by default the XOr operator, not the exponent operator</li>
+<li>The default XOr operator is left-associative a^b^c = (a^b)^c and not right-associative like exponentiation a^b^c = a^(b^c)</li>
+<li>The default XOr operator has a low precedence, whereas exponentiation has a higher precedence than multiplication</li></ul>
+<br />These three reasons make this situation a little bit different. We will still derive the operator from the default binary ^ operator, because it still allows us to use the default expression matching algorithm. But we will need to change the precedence and associativity of the operator.<br /><br />The complete code is given:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">public</span> <span style="color:Blue;">class</span> ComplexPower : MultiParse.Default.MPLogicalXOr
+{
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Constructor</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Blue;">public</span> ComplexPower()
+        : <span style="color:Blue;">base</span>()
+    {
+        <span style="color:Green;">// Promote this operator to a higher precedence (execute before multiplication)</span>
+        <span style="color:Blue;">this</span>.precedence = PrecedenceMultiplicative + 1;
+        <span style="color:Blue;">this</span>.leftAssociative = <span style="color:Blue;">false</span>;
+    }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Execute power</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">override</span> <span style="color:Blue;">void</span> Execute(Stack&lt;<span style="color:Blue;">object</span>&gt; output)
+    {
+        <span style="color:Green;">// Get operands</span>
+        <span style="color:Blue;">object</span> right = output.Pop();
+        <span style="color:Blue;">object</span> left = output.Pop();
+
+        <span style="color:Blue;">double</span> ld, rd;
+        <span style="color:Blue;">if</span> (CastImplicit(left, <span style="color:Blue;">out</span> ld) &amp;&amp; CastImplicit(right, <span style="color:Blue;">out</span> rd))
+            Power(output, ld, rd);
+        <span style="color:Blue;">else</span> <span style="color:Blue;">if</span> (left <span style="color:Blue;">is</span> Complex &amp;&amp; CastImplicit(right, <span style="color:Blue;">out</span> rd))
+            Power(output, (Complex)left, rd);
+        <span style="color:Blue;">else</span>
+            <span style="color:Blue;">throw</span> <span style="color:Blue;">new</span> MultiParse.InvalidArgumentTypeException(<span style="color:#A31515;">&quot;^&quot;</span>, left, right);
+    }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> double ^ double power</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;left&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;right&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Power(Stack&lt;<span style="color:Blue;">object</span>&gt; output, <span style="color:Blue;">double</span> left, <span style="color:Blue;">double</span> right)
+    {
+        output.Push(Math.Pow(left, right));
+    }
+
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;summary&gt;</span>
+    <span style="color:Gray;">///</span><span style="color:Green;"> Complex ^ double exponentiation</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;/summary&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;output&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;left&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Gray;">///</span> <span style="color:Gray;">&lt;param name=&quot;right&quot;&gt;</span><span style="color:Gray;">&lt;/param&gt;</span>
+    <span style="color:Blue;">public</span> <span style="color:Blue;">void</span> Power(Stack&lt;<span style="color:Blue;">object</span>&gt; output, Complex left, <span style="color:Blue;">double</span> right)
+    {
+        <span style="color:Green;">// Convert to polar form</span>
+        <span style="color:Blue;">double</span> abssq = left.Real * left.Real + left.Imag * left.Imag;
+        <span style="color:Blue;">double</span> argument = Math.Atan2(left.Imag, left.Real);
+
+        <span style="color:Green;">// Calculate the polar form of the exponentiated complex number</span>
+        <span style="color:Blue;">double</span> powAbs = Math.Pow(abssq, right * 0.5);
+        <span style="color:Blue;">double</span> powArg = argument * right;
+
+        <span style="color:Green;">// Convert back to conventional complex number</span>
+        output.Push(<span style="color:Blue;">new</span> Complex(powAbs * Math.Cos(powArg), powAbs * Math.Sin(powArg)));
+    }
+}
+</pre></div><br />The constructor is now specified in order to assign the correct precedence and associativity.<br />Adding all these functions finally look like this:<br /><br /><div style="color:Black;background-color:White;"><pre>
+<span style="color:Blue;">using</span> System;
+<span style="color:Blue;">using</span> MultiParse;
+<span style="color:Blue;">using</span> MultiParse.Default;
+<span style="color:Blue;">using</span> Tutorials.Complex;
+
+<span style="color:Blue;">namespace</span> Tutorials
+{
+    <span style="color:Blue;">class</span> Program
+    {
+        <span style="color:Blue;">static</span> <span style="color:Blue;">void</span> Main(<span style="color:Blue;">string</span>[] args)
+        {
+            <span style="color:Green;">// Create a MultiParse Expression object</span>
+            Expression e = <span style="color:Blue;">new</span> Expression(MPDefault.DataTypes.Double | MPDefault.DataTypes.Int);
+            e.DataTypes.Add(<span style="color:Blue;">new</span> ComplexDataType());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexAddition());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexSubtraction());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexMultiplication());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexDivision());
+            e.Operators.Add(<span style="color:Blue;">new</span> ComplexPower());
+
+            <span style="color:Green;">// Evaluate the expression</span>
+            <span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;(1+3*i)^2/(1-i)&quot;</span>);
+            Console.WriteLine(result + <span style="color:#A31515;">&quot; &quot;</span> + result.GetType().ToString()); <span style="color:Green;">// returns -7+i*-1 Tutorials.Complex.Complex</span>
+            Console.ReadKey();
+        }
+    }
+}
+</pre></div><br />That is all for operators! On to <a href="https://multiparse.codeplex.com/wikipage?title=Custom%20functions&referringTitle=Custom%20operators">Custom functions</a>!</div><div class="ClearBoth"></div>

@@ -1,0 +1,34 @@
+<div class="wikidoc"><h1>Project Description</h1>
+MultiParse is a mathematical expression parser written in the .NET framework. The focus of the project is building a highly customizable expression parser. This involves custom types, custom operators and custom functions. Also dynamic/static variables are perfectly feasible.<br />The documentation guides you through the steps of making your own data type with its own functions and operators.<br /><br />The expression parser itself is based on Dijkstra&#39;s Shunting Yard algorithm with a few modifications to accommodate variable argument length functions. The interface is loosely based on NCalc (<a href="https://ncalc.codeplex.com/">https://ncalc.codeplex.com/</a>), which is a very user-friendly expression parser. This library then goes one step further and allows users to define their own types, functions and even operators.<br /><br />The customizing features makes this parser a very useful tool. As an example, a complex number parser is implemented in the <a href="https://multiparse.codeplex.com/documentation?referringTitle=Home">Documentation</a>. It then becomes as simple as it can get to parse expressions with complex numbers!<br /><br />Find the NuGet package at <a href="https://www.nuget.org/packages/MultiParse/">https://www.nuget.org/packages/MultiParse/</a>!<br />
+<h1>Getting Started</h1>
+Using the expression parser is as easy as<br /><br /><div style="color:Black;background-color:White;"><pre>
+Expression e = <span style="color:Blue;">new</span> Expression();
+<span style="color:Blue;">object</span> result = e.Evaluate(<span style="color:#A31515;">&quot;(3+cos(9.0f/2)*2f)/(3+2)&quot;</span>);
+</pre></div><br />Check the <a href="https://multiparse.codeplex.com/documentation?referringTitle=Home">Documentation</a> to explore the full potential of the expression parser.<br />
+<h1>Features</h1><ul><li>Custom user-defined data types
+<ul><li>C# native data types have been implemented
+<ul><li>Boolean/bool</li>
+<li>Byte/byte, Char/char, SByte/sbyte</li>
+<li>Int16/short, UInt16/ushort, Int32/int, UInt32/uint, Int64/long, UInt64/ulong, Decimal/decimal</li>
+<li>String/string (supports C# escape sequences including unicode \xX(XXX) \uXXXX and \UXXXXXXXX)</li>
+<li>Single/float, Double/double</li>
+<li>DateTime is not implemented as it does not have a literal format in C#. But it can be implemented by the user.</li>
+<li>Variables, static and dynamic.</li></ul></li></ul></li>
+<li>Custom user-defined operators
+<ul><li>Default C# binary operators have been implemented for all native data types
+<ul><li>Arithmetic operators: +, -, *, /, %</li>
+<li>Relational operators: &lt;=, &gt;=, &lt;, &gt;, ==, !=</li>
+<li>Logical operators: &amp;, |, ^</li>
+<li>Conditional operators: ||, &amp;&amp;</li></ul></li>
+<li>Default C# unary operators have been implemented for all native data types
+<ul><li>Arithmetic operators: +, -</li>
+<li>Logical operators: ~</li>
+<li>Conditional operators: !</li>
+<li>Explicit type casts: eg. (Boolean), (int), etc.</li></ul></li></ul></li>
+<li>Customizable functions
+<ul><li>Default C# Math functions have been implemented
+<ul><li>Generic functions: Abs(), Ceiling(), Exp(), Floor(), Log(), Log10(), Max(), Min(), Pow(), Round(), Sign(), Sqrt(), Truncate()</li>
+<li>Trigometric functions: Acos(), Asin(), Atan(), Atan2(), Cos(), Sin(), Tan()</li>
+<li>Hyperbolic functions: Cosh(), Sinh(), Tanh()</li></ul></li></ul></li>
+<li>Compilation at first evaluation
+<ul><li>Subsequent evaluations will use the compiled action queue.</li></ul></li></ul></div><div class="ClearBoth"></div>
